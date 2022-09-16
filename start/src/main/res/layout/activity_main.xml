@@ -35,6 +35,14 @@
             android:layout_gravity="top"
             android:background="#8000">
 
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:onClick="createActivity"
+                    android:text="Datos">
+
+                </Button>
+
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

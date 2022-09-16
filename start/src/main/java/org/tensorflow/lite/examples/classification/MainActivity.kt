@@ -19,12 +19,14 @@ package org.tensorflow.lite.examples.classification
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -39,10 +41,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
+import org.tensorflow.lite.examples.classification.ml.ModelBandera
 import org.tensorflow.lite.examples.classification.ui.RecognitionAdapter
 import org.tensorflow.lite.examples.classification.util.YuvToRgbConverter
 import org.tensorflow.lite.examples.classification.viewmodel.Recognition
 import org.tensorflow.lite.examples.classification.viewmodel.RecognitionListViewModel
+import org.tensorflow.lite.support.image.TensorImage
 import java.util.concurrent.Executors
 import kotlin.random.Random
 
@@ -58,6 +62,7 @@ typealias RecognitionListener = (recognition: List<Recognition>) -> Unit
 /**
  * Main entry point into TensorFlow Lite Classifier
  */
+private var code: String = ""
 class MainActivity : AppCompatActivity() {
 
     // CameraX variables
@@ -107,6 +112,15 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
+    }
+    fun createActivity(view: View?) {
+        val intent = Intent(this, Informacion::class.java)
+        intent.putExtra("code", code)
+        Toast.makeText(
+            this,""+code,
+            Toast.LENGTH_SHORT
+        ).show()
+        startActivity(intent)
     }
 
     /**
@@ -205,7 +219,7 @@ class MainActivity : AppCompatActivity() {
 
     private class ImageAnalyzer(ctx: Context, private val listener: RecognitionListener) :
         ImageAnalysis.Analyzer {
-
+        var banderaModel:ModelBandera= ModelBandera.newInstance(ctx)
         // TODO 1: Add class variable TensorFlow Lite Model
         // Initializing the flowerModel by lazy so that it runs in the same thread when the process
         // method is called.
@@ -216,6 +230,10 @@ class MainActivity : AppCompatActivity() {
         override fun analyze(imageProxy: ImageProxy) {
 
             val items = mutableListOf<Recognition>()
+            val tfImagen=TensorImage.fromBitmap((toBitmap(imageProxy)))
+            val outputs = banderaModel.process(tfImagen).probabilityAsCategoryList.apply {
+                sortByDescending { it.score }
+            }.take(MAX_RESULT_DISPLAY)
 
             // TODO 2: Convert Image to Bitmap then to TensorImage
 
@@ -224,11 +242,12 @@ class MainActivity : AppCompatActivity() {
             // TODO 4: Converting the top probability items into a list of recognitions
 
             // START - Placeholder code at the start of the codelab. Comment this block of code out.
-            for (i in 0 until MAX_RESULT_DISPLAY){
-                items.add(Recognition("Fake label $i", Random.nextFloat()))
-            }
-            // END - Placeholder code at the start of the codelab. Comment this block of code out.
 
+            // END - Placeholder code at the start of the codelab. Comment this block of code out.
+            for(output in outputs){
+                items.add(Recognition(output.label,output.score))
+            }
+            code=outputs[0].label
             // Return the result
             listener(items.toList())
 
